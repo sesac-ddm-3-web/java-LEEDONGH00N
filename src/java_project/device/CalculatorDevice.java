@@ -4,7 +4,6 @@ import java_project.calculate.CalculatorEngine;
 import java_project.converter.ExpressionConverter;
 import java_project.data.CalculatorData;
 import java_project.data.TaskType;
-import java_project.validator.ExpressionValidator;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -43,7 +42,6 @@ public class CalculatorDevice {
     }
 
     private void calculate(String expr) {
-        ExpressionValidator.validate(expr);
         int result = engine.calculate(converter.convert(expr));
         System.out.println(result);
         dataMap.put(id++, CalculatorData.create(expr, String.valueOf(result)));
