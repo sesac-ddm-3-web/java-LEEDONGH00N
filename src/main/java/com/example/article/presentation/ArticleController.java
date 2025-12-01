@@ -1,6 +1,7 @@
 package com.example.article.presentation;
 
 import com.example.article.application.ArticleService;
+import com.example.article.global.annotation.LoginMember;
 import com.example.article.presentation.dto.request.ArticleCreateReqDto;
 import com.example.article.presentation.dto.response.ArticleBriefResDto;
 import com.example.article.presentation.dto.response.ArticleDetailResDto;
@@ -21,19 +22,19 @@ public class ArticleController {
 
     @PostMapping
     public ResponseEntity<Void> createArticle(@Valid @RequestBody ArticleCreateReqDto request,
-                                              @RequestAttribute("LOGIN_MEMBER") String loginMemberEmail){
+                                              @LoginMember String loginMemberEmail){
         articleService.createArticle(request,loginMemberEmail);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping
-    public ResponseEntity<List<ArticleBriefResDto>> getAllArticles(@RequestAttribute("LOGIN_MEMBER") String loginMemberEmail){
+    public ResponseEntity<List<ArticleBriefResDto>> getAllArticles(@LoginMember String loginMemberEmail){
         return ResponseEntity.ok(articleService.getAllArticles(loginMemberEmail));
     }
 
     @GetMapping("/{articleId}")
     public ResponseEntity<ArticleDetailResDto> getArticleById(@PathVariable Long articleId,
-                                                              @RequestAttribute("LOGIN_MEMBER") String loginMemberEmail){
+                                                              @LoginMember String loginMemberEmail){
         return ResponseEntity.status(HttpStatus.OK).body(articleService.getArticleDetail(loginMemberEmail, articleId));
     }
 }

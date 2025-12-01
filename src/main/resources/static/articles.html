@@ -56,6 +56,18 @@
 </main>
 
 <script>
+    function getAccessToken() {
+        return localStorage.getItem('accessToken');
+    }
+
+    function authHeaders(extra = {}) {
+        const token = getAccessToken();
+        if (token) {
+            return { ...extra, 'Authorization': `Bearer ${token}` };
+        }
+        return extra;
+    }
+
     function showAlert(message) {
         const box = document.getElementById('alertBox');
         box.textContent = message;
@@ -77,7 +89,9 @@
 
     async function loadArticles() {
         try {
-            const res = await fetch('/api/v1/articles');
+            const res = await fetch('/api/v1/articles', {
+                headers: authHeaders()
+            });
             if (res.status === 401 || res.status === 403) {
                 showAlert('로그인이 필요합니다. 로그인 페이지로 이동하세요.');
                 return;

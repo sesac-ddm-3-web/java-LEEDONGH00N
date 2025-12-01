@@ -12,7 +12,7 @@ import java.util.Date;
 @Component
 public class JwtProvider {
 
-    private final String secretKey = "secret-key-0001234";
+    private final String secretKey = "secret-key-0001234asdasdasdasdasdasd";
     private final long validityInMs = 1000L * 60 * 60;
 
     public String createToken(String email) {

@@ -62,10 +62,21 @@
     <textarea id="replyContent" placeholder="댓글 내용을 입력하세요"></textarea><br>
     <button class="btn-primary" onclick="createReply()">댓글 등록</button>
 </main>
-
 <script>
     const params = new URLSearchParams(location.search);
     const articleId = params.get('id');
+
+    function getAccessToken() {
+        return localStorage.getItem('accessToken');
+    }
+
+    function authHeaders(extra = {}) {
+        const token = getAccessToken();
+        if (token) {
+            return { ...extra, 'Authorization': `Bearer ${token}` };
+        }
+        return extra;
+    }
 
     function showAlert(message, type='error') {
         const box = document.getElementById('alertBox');
@@ -86,7 +97,9 @@
             return;
         }
         try {
-            const res = await fetch(`/api/v1/articles/${articleId}`);
+            const res = await fetch(`/api/v1/articles/${articleId}`, {
+                headers: authHeaders()
+            });
             if (res.status === 401 || res.status === 403) {
                 showAlert('로그인이 필요합니다.');
                 return;
@@ -109,7 +122,9 @@
 
     async function loadReplies() {
         try {
-            const res = await fetch(`/api/v1/articles/${articleId}/replies`);
+            const res = await fetch(`/api/v1/articles/${articleId}/replies`, {
+                headers: authHeaders()
+            });
             if (!res.ok) {
                 const text = await res.text();
                 showAlert('댓글 조회 실패: ' + text);
@@ -164,7 +179,7 @@
         try {
             const res = await fetch(`/api/v1/articles/${articleId}/replies`, {
                 method:'POST',
-                headers:{ 'Content-Type':'application/json' },
+                headers: authHeaders({ 'Content-Type':'application/json' }),
                 body: JSON.stringify({ content })
             });
             if (res.status === 401 || res.status === 403) {
@@ -188,7 +203,8 @@
         if (!confirm('댓글을 삭제하시겠습니까?')) return;
         try {
             const res = await fetch(`/api/v1/articles/${articleId}/replies/${replyId}`, {
-                method:'DELETE'
+                method:'DELETE',
+                headers: authHeaders()
             });
             if (res.status === 401 || res.status === 403) {
                 showAlert('로그인이 필요합니다.');

@@ -111,9 +111,21 @@
                 body: JSON.stringify({ email, password })
             });
             if (res.ok) {
-                // 세션 로그인 성공, 브라우저는 JSESSIONID 쿠키를 자동으로 저장
+                const body = await res.json();          // { accessToken: "..." }
+                const token = body.accessToken;
+                if (!token) {
+                    showAlert('토큰이 응답에 없습니다.');
+                    return;
+                }
+
+                // JWT + 이메일 저장
+                localStorage.setItem('accessToken', token);
                 localStorage.setItem('loginEmail', email);
-                window.location.href = '/articles.html';
+
+                showAlert('로그인 성공! 게시글 목록으로 이동합니다.', 'success');
+                setTimeout(() => {
+                    window.location.href = '/articles.html';
+                }, 800);
             } else {
                 const text = await res.text();
                 showAlert('로그인 실패: ' + text);

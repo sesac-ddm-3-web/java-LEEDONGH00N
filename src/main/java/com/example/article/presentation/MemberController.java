@@ -2,8 +2,10 @@ package com.example.article.presentation;
 
 
 import com.example.article.application.MemberService;
+import com.example.article.global.jwt.JwtProvider;
 import com.example.article.presentation.dto.request.MemberLoginReqDto;
 import com.example.article.presentation.dto.request.MemberSignupReqDto;
+import com.example.article.presentation.dto.response.TokenResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -29,11 +31,7 @@ public class MemberController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Void> login(@Valid @RequestBody MemberLoginReqDto request,
-                                      HttpServletRequest httpServletRequest){
-        String loginEmail = memberService.loginMember(request);
-        HttpSession session = httpServletRequest.getSession();
-        session.setAttribute("LOGIN_MEMBER", loginEmail);
-        return ResponseEntity.status(HttpStatus.OK).build();
+    public ResponseEntity<TokenResponse> login(@Valid @RequestBody MemberLoginReqDto request){
+        return ResponseEntity.status(HttpStatus.OK).body(memberService.loginMember(request));
     }
 }

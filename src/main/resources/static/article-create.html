@@ -55,8 +55,19 @@
     <button class="btn-primary" onclick="createArticle()">등록</button>
     <button class="btn-secondary" onclick="location.href='/articles.html'">목록으로</button>
 </main>
-
 <script>
+    function getAccessToken() {
+        return localStorage.getItem('accessToken');
+    }
+
+    function authHeaders(extra = {}) {
+        const token = getAccessToken();
+        if (token) {
+            return { ...extra, 'Authorization': `Bearer ${token}` };
+        }
+        return extra;
+    }
+
     function showAlert(message, type='error') {
         const box = document.getElementById('alertBox');
         box.textContent = message;
@@ -75,7 +86,7 @@
         try {
             const res = await fetch('/api/v1/articles', {
                 method: 'POST',
-                headers: { 'Content-Type':'application/json' },
+                headers: authHeaders({ 'Content-Type':'application/json' }),
                 body: JSON.stringify({ title, content })
             });
             if (res.status === 401 || res.status === 403) {

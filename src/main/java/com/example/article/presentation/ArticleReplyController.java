@@ -2,6 +2,7 @@ package com.example.article.presentation;
 
 
 import com.example.article.application.ArticleReplyService;
+import com.example.article.global.annotation.LoginMember;
 import com.example.article.presentation.dto.request.ArticleReplyCreateReqDto;
 import com.example.article.presentation.dto.response.ArticleReplyResDto;
 import jakarta.validation.Valid;
@@ -22,21 +23,21 @@ public class ArticleReplyController {
     @PostMapping
     public ResponseEntity<Void> createReply(@PathVariable Long articleId,
                                             @Valid @RequestBody ArticleReplyCreateReqDto request,
-                                            @RequestAttribute("LOGIN_MEMBER") String loginMemberEmail) {
+                                            @LoginMember String loginMemberEmail) {
         articleReplyService.createReply(articleId, loginMemberEmail, request.getContent());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @GetMapping
     public ResponseEntity<List<ArticleReplyResDto>> getReplies(@PathVariable Long articleId,
-                                                               @RequestAttribute("LOGIN_MEMBER") String loginMemberEmail) {
+                                                               @LoginMember String loginMemberEmail) {
         return ResponseEntity.ok(articleReplyService.getReplies(articleId, loginMemberEmail));
     }
 
     @DeleteMapping("/{replyId}")
     public ResponseEntity<Void> deleteReply(@PathVariable Long articleId,
                                             @PathVariable Long replyId,
-                                            @RequestAttribute("LOGIN_MEMBER") String loginMemberEmail) {
+                                            @LoginMember String loginMemberEmail) {
 
         articleReplyService.deleteReply(replyId, loginMemberEmail);
         return ResponseEntity.noContent().build();
