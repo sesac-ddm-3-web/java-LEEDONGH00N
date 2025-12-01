@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>게시글 상세</title>
+    <style>
+        * { box-sizing:border-box; }
+        body { margin:0; font-family:system-ui,sans-serif; background:#f5f5f5; }
+        header {
+            background:#1f2933; color:#fff; padding:12px 20px;
+            display:flex; justify-content:space-between; align-items:center;
+        }
+        header h1 { margin:0; font-size:20px; cursor:pointer; }
+        header a { color:#93c5fd; margin-left:8px; text-decoration:none; font-size:13px; }
+        main {
+            max-width:800px; margin:20px auto; background:#fff; padding:20px;
+            border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1);
+        }
+        h2 { margin-top:0; }
+        .meta { font-size:13px; color:#6b7280; }
+        pre { white-space:pre-wrap; font-size:14px; }
+        .alert { margin-bottom:12px; padding:8px 10px; border-radius:4px; font-size:13px; }
+        .alert-error { background:#fee2e2; color:#b91c1c; }
+        .alert-success { background:#dcfce7; color:#166534; }
+        .reply-item { border-bottom:1px solid #e5e7eb; padding:8px 0; }
+        .reply-header { display:flex; justify-content:space-between; align-items:center; }
+        .reply-meta { font-size:13px; color:#6b7280; }
+        textarea {
+            width:100%; min-height:100px; padding:8px; border-radius:4px;
+            border:1px solid #d1d5db; font-size:14px;
+        }
+        button { padding:6px 12px; border:none; border-radius:4px; cursor:pointer; font-size:14px; }
+        .btn-primary { background:#2563eb; color:#fff; }
+        .btn-danger { background:#ef4444; color:#fff; }
+        .btn-secondary { background:#e5e7eb; }
+        .top-actions { display:flex; gap:8px; margin-bottom:8px; }
+    </style>
+</head>
+<body>
+<header>
+    <h1 onclick="location.href='/articles.html'">게시판</h1>
+    <div>
+        <a href="/articles.html">목록</a>
+        <a href="/article-create.html">새 글 작성</a>
+        <a href="/login.html">로그인/회원가입</a>
+    </div>
+</header>
+
+<main>
+    <div id="alertBox" class="alert" style="display:none;"></div>
+
+    <div class="top-actions">
+        <button class="btn-secondary" onclick="location.href='/articles.html'">← 목록으로</button>
+        <!-- 🔥 내 글일 때만 노출할 버튼 (JS에서 display 제어) -->
+        <button id="deleteArticleBtn"
+                class="btn-danger"
+                style="display:none;"
+                onclick="deleteArticle()">
+            게시글 삭제
+        </button>
+    </div>
+
+    <h2 id="title"></h2>
+    <p id="meta" class="meta"></p>
+    <pre id="content"></pre>
+
+    <hr>
+
+    <h3>댓글</h3>
+    <div id="replyList"></div>
+
+    <h4>댓글 작성</h4>
+    <textarea id="replyContent" placeholder="댓글 내용을 입력하세요"></textarea><br>
+    <button class="btn-primary" onclick="createReply()">댓글 등록</button>
+</main>
+
+<script>
+    const params = new URLSearchParams(location.search);
+    const articleId = params.get('id');
+
+    function getAccessToken() {
+        return localStorage.getItem('accessToken');
+    }
+
+    function authHeaders(extra = {}) {
+        const token = getAccessToken();
+        if (token) {
+            return { ...extra, 'Authorization': `Bearer ${token}` };
+        }
+        return extra;
+    }
+
+    function showAlert(message, type='error') {
+        const box = document.getElementById('alertBox');
+        box.textContent = message;
+        box.style.display = 'block';
+        box.className = 'alert ' + (type === 'error' ? 'alert-error' : 'alert-success');
+        setTimeout(() => box.style.display = 'none', 3000);
+    }
+
+    function formatDateTime(str) {
+        if (!str) return '';
+        return str.replace('T',' ').substring(0,19);
+    }
+
+    async function loadArticle() {
+        if (!articleId) {
+            showAlert('articleId가 없습니다.');
+            return;
+        }
+        try {
+            const res = await fetch(`/api/v1/articles/${articleId}`, {
+                headers: authHeaders()
+            });
+            if (res.status === 401 || res.status === 403) {
+                showAlert('로그인이 필요합니다.');
+                return;
+            }
+            if (!res.ok) {
+                const text = await res.text();
+                showAlert('게시글 조회 실패: ' + text);
+                return;
+            }
+            const data = await res.json();
+            document.getElementById('title').textContent = data.title;
+            document.getElementById('meta').textContent =
+                `작성자: ${data.author} | 조회수: ${data.view} | 작성일시: ${formatDateTime(data.createdAt)}`;
+            document.getElementById('content').textContent = data.content;
+
+            // 🔥 서버에서 내려준 mine 값으로 삭제 버튼 노출 제어
+            if (data.mine) {
+                document.getElementById('deleteArticleBtn').style.display = 'inline-block';
+            }
+        } catch (e) {
+            console.error(e);
+            showAlert('게시글 조회 중 오류가 발생했습니다.');
+        }
+    }
+
+    async function loadReplies() {
+        try {
+            const res = await fetch(`/api/v1/articles/${articleId}/replies`, {
+                headers: authHeaders()
+            });
+            if (!res.ok) {
+                const text = await res.text();
+                showAlert('댓글 조회 실패: ' + text);
+                return;
+            }
+            const data = await res.json();
+            const container = document.getElementById('replyList');
+            container.innerHTML = '';
+            if (data.length === 0) {
+                container.innerHTML = '<p class="meta">아직 댓글이 없습니다.</p>';
+                return;
+            }
+            data.forEach(r => {
+                const div = document.createElement('div');
+                div.classList.add('reply-item');
+
+                const header = document.createElement('div');
+                header.classList.add('reply-header');
+
+                const meta = document.createElement('div');
+                meta.classList.add('reply-meta');
+                meta.textContent = `${r.writerName} | ${formatDateTime(r.createdAt)}`;
+
+                const delBtn = document.createElement('button');
+                delBtn.textContent = '삭제';
+                delBtn.classList.add('btn-danger');
+                delBtn.onclick = () => deleteReply(r.id);
+
+                header.appendChild(meta);
+                header.appendChild(delBtn);
+
+                const content = document.createElement('div');
+                content.textContent = r.content;
+
+                div.appendChild(header);
+                div.appendChild(content);
+
+                container.appendChild(div);
+            });
+        } catch (e) {
+            console.error(e);
+            showAlert('댓글 조회 중 오류가 발생했습니다.');
+        }
+    }
+
+    async function createReply() {
+        const content = document.getElementById('replyContent').value.trim();
+        if (!content) {
+            showAlert('댓글 내용을 입력하세요.');
+            return;
+        }
+        try {
+            const res = await fetch(`/api/v1/articles/${articleId}/replies`, {
+                method:'POST',
+                headers: authHeaders({ 'Content-Type':'application/json' }),
+                body: JSON.stringify({ content })
+            });
+            if (res.status === 401 || res.status === 403) {
+                showAlert('로그인이 필요합니다.');
+                return;
+            }
+            if (res.ok || res.status === 201) {
+                document.getElementById('replyContent').value = '';
+                loadReplies();
+            } else {
+                const text = await res.text();
+                showAlert('댓글 작성 실패: ' + text);
+            }
+        } catch (e) {
+            console.error(e);
+            showAlert('댓글 작성 중 오류가 발생했습니다.');
+        }
+    }
+
+    async function deleteReply(replyId) {
+        if (!confirm('댓글을 삭제하시겠습니까?')) return;
+        try {
+            const res = await fetch(`/api/v1/articles/${articleId}/replies/${replyId}`, {
+                method:'DELETE',
+                headers: authHeaders()
+            });
+            if (res.status === 401 || res.status === 403) {
+                showAlert('로그인이 필요합니다.');
+                return;
+            }
+            if (res.ok || res.status === 204) {
+                loadReplies();
+            } else {
+                const text = await res.text();
+                showAlert('댓글 삭제 실패: ' + text);
+            }
+        } catch (e) {
+            console.error(e);
+            showAlert('댓글 삭제 중 오류가 발생했습니다.');
+        }
+    }
+
+    // 🔥 게시글 삭제
+    async function deleteArticle() {
+        if (!confirm('게시글을 삭제하시겠습니까?')) return;
+        try {
+            const res = await fetch(`/api/v1/articles/${articleId}`, {
+                method: 'DELETE',
+                headers: authHeaders()
+            });
+            if (res.status === 401 || res.status === 403) {
+                showAlert('로그인이 필요합니다.');
+                return;
+            }
+            if (res.ok || res.status === 204) {
+                alert('게시글이 삭제되었습니다.');
+                location.href = '/articles.html';
+            } else {
+                const text = await res.text();
+                showAlert('게시글 삭제 실패: ' + text);
+            }
+        } catch (e) {
+            console.error(e);
+            showAlert('게시글 삭제 중 오류가 발생했습니다.');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!articleId) {
+            showAlert('잘못된 접근입니다 (id 없음).');
+            return;
+        }
+        loadArticle();
+        loadReplies();
+    });
+</script>
+</body>
+</html>
