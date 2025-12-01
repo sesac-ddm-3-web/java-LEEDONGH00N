@@ -44,6 +44,14 @@ public class ArticleService {
         return ArticleDetailResDto.from(article, member);
     }
 
+    @Transactional
+    public void deleteArticle(String memberEmail, Long articleId) {
+        Member member = loadMemberOrThrow(memberEmail);
+        Article article = loadArticleOrThrow(articleId);
+        article.validateOwner(member);
+        articleJpaRepository.delete(article);
+    }
+
     private Article loadArticleOrThrow(Long articleId) {
         return articleJpaRepository.findById(articleId)
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 게시글"));

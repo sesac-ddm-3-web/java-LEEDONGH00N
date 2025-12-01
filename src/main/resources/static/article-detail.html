@@ -33,6 +33,7 @@
         .btn-primary { background:#2563eb; color:#fff; }
         .btn-danger { background:#ef4444; color:#fff; }
         .btn-secondary { background:#e5e7eb; }
+        .top-actions { display:flex; gap:8px; margin-bottom:8px; }
     </style>
 </head>
 <body>
@@ -48,7 +49,17 @@
 <main>
     <div id="alertBox" class="alert" style="display:none;"></div>
 
-    <button class="btn-secondary" onclick="location.href='/articles.html'">← 목록으로</button>
+    <div class="top-actions">
+        <button class="btn-secondary" onclick="location.href='/articles.html'">← 목록으로</button>
+        <!-- 🔥 내 글일 때만 노출할 버튼 (JS에서 display 제어) -->
+        <button id="deleteArticleBtn"
+                class="btn-danger"
+                style="display:none;"
+                onclick="deleteArticle()">
+            게시글 삭제
+        </button>
+    </div>
+
     <h2 id="title"></h2>
     <p id="meta" class="meta"></p>
     <pre id="content"></pre>
@@ -62,6 +73,7 @@
     <textarea id="replyContent" placeholder="댓글 내용을 입력하세요"></textarea><br>
     <button class="btn-primary" onclick="createReply()">댓글 등록</button>
 </main>
+
 <script>
     const params = new URLSearchParams(location.search);
     const articleId = params.get('id');
@@ -114,6 +126,11 @@
             document.getElementById('meta').textContent =
                 `작성자: ${data.author} | 조회수: ${data.view} | 작성일시: ${formatDateTime(data.createdAt)}`;
             document.getElementById('content').textContent = data.content;
+
+            // 🔥 서버에서 내려준 mine 값으로 삭제 버튼 노출 제어
+            if (data.mine) {
+                document.getElementById('deleteArticleBtn').style.display = 'inline-block';
+            }
         } catch (e) {
             console.error(e);
             showAlert('게시글 조회 중 오류가 발생했습니다.');
@@ -219,6 +236,31 @@
         } catch (e) {
             console.error(e);
             showAlert('댓글 삭제 중 오류가 발생했습니다.');
+        }
+    }
+
+    // 🔥 게시글 삭제
+    async function deleteArticle() {
+        if (!confirm('게시글을 삭제하시겠습니까?')) return;
+        try {
+            const res = await fetch(`/api/v1/articles/${articleId}`, {
+                method: 'DELETE',
+                headers: authHeaders()
+            });
+            if (res.status === 401 || res.status === 403) {
+                showAlert('로그인이 필요합니다.');
+                return;
+            }
+            if (res.ok || res.status === 204) {
+                alert('게시글이 삭제되었습니다.');
+                location.href = '/articles.html';
+            } else {
+                const text = await res.text();
+                showAlert('게시글 삭제 실패: ' + text);
+            }
+        } catch (e) {
+            console.error(e);
+            showAlert('게시글 삭제 중 오류가 발생했습니다.');
         }
     }
 

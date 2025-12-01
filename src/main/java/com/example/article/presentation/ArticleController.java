@@ -37,4 +37,11 @@ public class ArticleController {
                                                               @LoginMember String loginMemberEmail){
         return ResponseEntity.status(HttpStatus.OK).body(articleService.getArticleDetail(loginMemberEmail, articleId));
     }
+
+    @DeleteMapping("/{articleId}")
+    public ResponseEntity<Void> deleteArticleById(@PathVariable Long articleId,
+                                                  @LoginMember String loginMemberEmail){
+        articleService.deleteArticle(loginMemberEmail, articleId);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
 }

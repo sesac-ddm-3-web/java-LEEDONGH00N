@@ -15,8 +15,16 @@ public class ArticleDetailResDto {
     private String author;
     private Long view;
     private LocalDateTime createdAt;
+    private Boolean mine;
 
     public static ArticleDetailResDto from(Article article, Member member) {
-        return new ArticleDetailResDto(article.getTitle(), article.getContent(),member.getName(), article.getViews(), article.getCreatedAt());
+        return new ArticleDetailResDto(
+                article.getTitle(),
+                article.getContent(),
+                member.getName(),
+                article.getViews(),
+                article.getCreatedAt(),
+                article.isWrittenBy(member)
+        );
     }
 }

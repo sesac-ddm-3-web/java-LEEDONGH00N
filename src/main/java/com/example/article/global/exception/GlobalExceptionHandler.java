@@ -1,6 +1,7 @@
 package com.example.article.global.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSourceResolvable;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,19 +25,18 @@ public class GlobalExceptionHandler {
         String message = e.getBindingResult().getFieldErrors().stream()
                 .map(DefaultMessageSourceResolvable::getDefaultMessage)
                 .findFirst()
-                .orElse("Validation Failed");
+                .orElse("Validation 실");
         final ErrorResponse response = new ErrorResponse(message);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<ErrorResponse> handleHandlerMethodValidationException(HandlerMethodValidationException e) {
-        String message = e
-                .getAllErrors()
+        String message = e.getAllErrors()
                 .stream()
-                .map(error -> error.getDefaultMessage())
+                .map(MessageSourceResolvable::getDefaultMessage)
                 .findFirst()
-                .orElse("Validation Failed");
+                .orElse("Validation 실패");
         final ErrorResponse response = new ErrorResponse(message);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }

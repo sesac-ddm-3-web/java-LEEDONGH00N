@@ -1,5 +1,7 @@
 package com.example.article.domain;
 
+import com.example.article.global.exception.AccessDeniedException;
+import com.example.article.global.exception.AuthException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -42,6 +44,18 @@ public class Article{
 
     public void addView(){
         this.views++;
+    }
+
+    public boolean isWrittenBy(Member member) {
+        return this.member != null
+                && member != null
+                && this.member.getId().equals(member.getId());
+    }
+
+    public void validateOwner(Member member){
+        if (!isWrittenBy(member)){
+            throw new AccessDeniedException("본인이 작성한 댓글만 삭제할 수 있습니다.");
+        }
     }
 
     public static Article create(String title, String content, Member member) {
